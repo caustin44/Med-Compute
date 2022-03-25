@@ -2,9 +2,15 @@
 using System.Collections.Generic;
 using System.Reflection;
 using Nancy;
+using Nancy.Extensions;
 
 namespace compute.geometry
 {
+    public class ConvertModel
+    {
+        public string b64str { get; set; }
+    }
+
     public class FixedEndPointsModule : NancyModule
     {
         public FixedEndPointsModule(Nancy.Routing.IRouteCacheProvider routeCacheProvider)
@@ -12,6 +18,7 @@ namespace compute.geometry
             Get[""] = _ => HomePage(Context);
             Get["/healthcheck"] = _ => "healthy";
             Get["version"] = _ => GetVersion(Context);
+            Post["convert"] = _ => ConvertObj(Context);
             Get["servertime"] = _ => ServerTime(Context);
             Get["sdk/csharp"] = _ => CSharpSdk(Context);
         }
@@ -19,6 +26,27 @@ namespace compute.geometry
         static Response HomePage(NancyContext ctx)
         {
             return new Nancy.Responses.RedirectResponse("https://www.rhino3d.com/compute");
+        }
+
+        static Response ConvertObj(NancyContext ctx)
+        {
+            using (var doc = Rhino.RhinoDoc.CreateHeadless(null))
+            {
+                // Decode the obj file and create an instance of it on the serverside
+                var requestBody = ctx.Request.Body.AsString();
+                ConvertModel jsonObject = Newtonsoft.Json.JsonConvert.DeserializeObject<ConvertModel>(requestBody);
+                System.IO.File.WriteAllBytes("temp.obj", Convert.FromBase64String(jsonObject.b64str));
+
+                // Create a rhino document based on the object file, and export it as a .3dm
+                doc.Import("temp.obj");
+                doc.Write3dmFile("temp.3dm", new Rhino.FileIO.FileWriteOptions());
+
+                // Write the document to an instance of Rhino's File3DM so that it can be returned as a byte array
+                var rhinoFile = Rhino.FileIO.File3dm.Read("temp.3dm");
+                var b64FileStr = Convert.ToBase64String(rhinoFile.ToByteArray());
+
+                return (Nancy.Response)b64FileStr;
+            }
         }
 
         static Response GetVersion(NancyContext ctx)
@@ -60,8 +88,7 @@ namespace compute.geometry
                     writer.Write(content);
                 }
             };
-            return response.AsAttachment("RhinoCompute.cs", "text/plain" );
+            return response.AsAttachment("RhinoCompute.cs", "text/plain");
         }
     }
 }
-
