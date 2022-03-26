@@ -74,6 +74,7 @@ namespace compute.geometry
         {
             if (string.IsNullOrWhiteSpace(url))
                 return null;
+
             GrasshopperDefinition rc = DataCache.GetCachedDefinition(url);
 
             if (rc != null)

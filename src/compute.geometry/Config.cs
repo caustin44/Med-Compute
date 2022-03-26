@@ -36,7 +36,7 @@ namespace compute.geometry
         /// </summary>
         public static bool Debug { get; private set; }
 
-        /// <summary>
+        /// <summary> 
         /// Loads config from environment variables (or uses defaults).
         /// </summary>
         public static void Load()
