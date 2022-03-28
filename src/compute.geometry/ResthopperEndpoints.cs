@@ -10,6 +10,7 @@ using Grasshopper.Kernel.Data;
 using Resthopper.IO;
 using Grasshopper.Kernel.Parameters;
 using Grasshopper.Kernel.Special;
+using Rhino.Render;
 using Rhino.Geometry;
 using System.Net;
 using Nancy.Extensions;
@@ -132,15 +133,7 @@ namespace compute.geometry
                 }
             }
 
-            ResthopperObject restobj = output.Values[0].InnerTree["{0;0;0}"].First();
-            var dict = JsonConvert.DeserializeObject<Dictionary<string, string>>(restobj.Data);
-            var mesh = Rhino.Runtime.CommonObject.FromJSON(dict) as Mesh;
-
-            var rhinoFile = new Rhino.FileIO.File3dm();
-            rhinoFile.Objects.AddMesh(mesh);
-
-            var b64FileStr = Convert.ToBase64String(rhinoFile.ToByteArray());
-            return (Nancy.Response)b64FileStr;
+            return (Nancy.Response)getEncodedFile(output);
         }
 
         static Response Grasshopper(NancyContext ctx)
@@ -153,21 +146,11 @@ namespace compute.geometry
            
             if (input.CacheSolve)
             {
-                // look in the cache to see if this has already been solved
                 string cachedReturnJson = DataCache.GetCachedSolveResults(body);
                 if (!string.IsNullOrWhiteSpace(cachedReturnJson))
                 {
                     Schema output = JsonConvert.DeserializeObject<Schema>(cachedReturnJson);
-
-                    ResthopperObject restobj = output.Values[0].InnerTree["{0;0;0;0}"].First();
-                    var dict = JsonConvert.DeserializeObject<Dictionary<string, string>>(restobj.Data);
-                    var mesh = Rhino.Runtime.CommonObject.FromJSON(dict) as Mesh;
-
-                    var rhinoFile = new Rhino.FileIO.File3dm();
-                    rhinoFile.Objects.AddMesh(mesh);
-
-                    var b64FileStr = Convert.ToBase64String(rhinoFile.ToByteArray());
-                    return (Nancy.Response)b64FileStr;
+                    return (Nancy.Response)getEncodedFile(output);
                 }
             }
 
@@ -176,18 +159,23 @@ namespace compute.geometry
             {
                 return GrasshopperSolveHelper(input, body, stopwatch);
             }
-
-            // 5 Feb 2021 S. Baer
-            // Throw a lock around the entire solve process for now. I can easily
-            // repeat multi-threaded issues by creating a catenary component with Hops
-            // that has one point for A and multiple points for B.
-            // We can narrow down this lock over time. As it stands, launching many
-            // compute instances on one computer is going to be a better solution anyway
-            // to deal with solving many times simultaniously.
             lock (_ghsolvelock)
             {
                 return GrasshopperSolveHelper(input, body, stopwatch);
             }
+        }
+
+        static String getEncodedFile(Schema grasshopperData)
+        {
+            ResthopperObject restobj = grasshopperData.Values[0].InnerTree["{0;0;0}"].First();
+            var dict = JsonConvert.DeserializeObject<Dictionary<string, string>>(restobj.Data);
+            var mesh = Rhino.Runtime.CommonObject.FromJSON(dict) as Mesh;
+
+            var rhinoFile = new Rhino.FileIO.File3dm();
+            rhinoFile.Objects.AddMesh(mesh);
+
+            var b64FileStr = Convert.ToBase64String(rhinoFile.ToByteArray());
+            return b64FileStr;
         }
 
         Response GetIoNames(NancyContext ctx, bool asPost)
