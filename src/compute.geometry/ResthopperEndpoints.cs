@@ -131,7 +131,16 @@ namespace compute.geometry
                     DataCache.SetCachedSolveResults(body, returnJson, definition);
                 }
             }
-            return res;
+
+            ResthopperObject restobj = output.Values[0].InnerTree["{0;0;0}"].First();
+            var dict = JsonConvert.DeserializeObject<Dictionary<string, string>>(restobj.Data);
+            var mesh = Rhino.Runtime.CommonObject.FromJSON(dict) as Mesh;
+
+            var rhinoFile = new Rhino.FileIO.File3dm();
+            rhinoFile.Objects.AddMesh(mesh);
+
+            var b64FileStr = Convert.ToBase64String(rhinoFile.ToByteArray());
+            return (Nancy.Response)b64FileStr;
         }
 
         static Response Grasshopper(NancyContext ctx)
@@ -148,9 +157,17 @@ namespace compute.geometry
                 string cachedReturnJson = DataCache.GetCachedSolveResults(body);
                 if (!string.IsNullOrWhiteSpace(cachedReturnJson))
                 {
-                    Response cachedResponse = cachedReturnJson;
-                    cachedResponse.ContentType = "application/json";
-                    return cachedResponse;
+                    Schema output = JsonConvert.DeserializeObject<Schema>(cachedReturnJson);
+
+                    ResthopperObject restobj = output.Values[0].InnerTree["{0;0;0;0}"].First();
+                    var dict = JsonConvert.DeserializeObject<Dictionary<string, string>>(restobj.Data);
+                    var mesh = Rhino.Runtime.CommonObject.FromJSON(dict) as Mesh;
+
+                    var rhinoFile = new Rhino.FileIO.File3dm();
+                    rhinoFile.Objects.AddMesh(mesh);
+
+                    var b64FileStr = Convert.ToBase64String(rhinoFile.ToByteArray());
+                    return (Nancy.Response)b64FileStr;
                 }
             }
 

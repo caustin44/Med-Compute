@@ -19,6 +19,7 @@ namespace compute.geometry
             Get["/healthcheck"] = _ => "healthy";
             Get["version"] = _ => GetVersion(Context);
             Post["convert"] = _ => ConvertObj(Context);
+            Post["encode"] = _ => EncodeFile(Context);
             Get["servertime"] = _ => ServerTime(Context);
             Get["sdk/csharp"] = _ => CSharpSdk(Context);
         }
@@ -47,6 +48,18 @@ namespace compute.geometry
 
                 return (Nancy.Response)b64FileStr;
             }
+        }
+
+        static Response EncodeFile(NancyContext ctx)
+        { 
+            var requestBody = ctx.Request.Body.AsString();
+
+            var rhinoFile = new Rhino.FileIO.File3dm();
+            //rhinoFile.Objects.Add(Convert.FromBase64String(requestBody));
+
+            var b64FileStr = Convert.ToBase64String(rhinoFile.ToByteArray());
+            return (Nancy.Response)b64FileStr;
+            
         }
 
         static Response GetVersion(NancyContext ctx)
