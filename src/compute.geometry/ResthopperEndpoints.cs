@@ -8,9 +8,6 @@ using Grasshopper.Kernel.Types;
 using Newtonsoft.Json;
 using Grasshopper.Kernel.Data;
 using Resthopper.IO;
-using Grasshopper.Kernel.Parameters;
-using Grasshopper.Kernel.Special;
-using Rhino.Render;
 using Rhino.Geometry;
 using System.Net;
 using Nancy.Extensions;
@@ -96,7 +93,6 @@ namespace compute.geometry
 
         static Response GrasshopperSolveHelper(Schema input, string body, System.Diagnostics.Stopwatch stopwatch)
         {
-            // load grasshopper file
             GrasshopperDefinition definition = GrasshopperDefinition.FromUrl(input.Pointer, true);
             if (definition == null && !string.IsNullOrWhiteSpace(input.Algo))
             {

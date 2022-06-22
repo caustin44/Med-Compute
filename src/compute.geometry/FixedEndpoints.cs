@@ -33,12 +33,12 @@ namespace compute.geometry
         {
             using (var doc = Rhino.RhinoDoc.CreateHeadless(null))
             {
-                // Decode the obj file and create an instance of it on the serverside
+                // Decode the file and create an instance of it on the serverside
                 var requestBody = ctx.Request.Body.AsString();
                 ConvertModel jsonObject = Newtonsoft.Json.JsonConvert.DeserializeObject<ConvertModel>(requestBody);
                 System.IO.File.WriteAllBytes("temp." + jsonObject.extension, Convert.FromBase64String(jsonObject.b64str));
 
-                // Create a rhino document based on the object file, and export it as a .3dm
+                // Create a rhino document based on the file, and export it as a .3dm
                 doc.Import("temp." + jsonObject.extension);
                 doc.Write3dmFile("temp.3dm", new Rhino.FileIO.FileWriteOptions());
 
