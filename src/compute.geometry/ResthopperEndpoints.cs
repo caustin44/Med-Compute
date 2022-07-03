@@ -163,7 +163,7 @@ namespace compute.geometry
 
         static String getEncodedFile(Schema grasshopperData)
         {
-            ResthopperObject restobj = grasshopperData.Values[0].InnerTree["{0;0;0}"].First();
+            ResthopperObject restobj = grasshopperData.Values[0].InnerTree.First().Value.First();
             var dict = JsonConvert.DeserializeObject<Dictionary<string, string>>(restobj.Data);
             var mesh = Rhino.Runtime.CommonObject.FromJSON(dict) as Mesh;
 
