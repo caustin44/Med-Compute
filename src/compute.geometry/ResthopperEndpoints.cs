@@ -13,6 +13,7 @@ using System.Net;
 using Nancy.Extensions;
 using System.Reflection;
 using System.Linq;
+using Rhino.FileIO;
 
 namespace compute.geometry
 {
@@ -163,13 +164,16 @@ namespace compute.geometry
 
         static String getEncodedFile(Schema grasshopperData)
         {
-            ResthopperObject restobj = grasshopperData.Values[0].InnerTree.First().Value.First();
-            var dict = JsonConvert.DeserializeObject<Dictionary<string, string>>(restobj.Data);
-            var mesh = Rhino.Runtime.CommonObject.FromJSON(dict) as Mesh;
-
             var rhinoFile = new Rhino.FileIO.File3dm();
-            rhinoFile.Objects.AddMesh(mesh);
 
+            grasshopperData.Values.ForEach(value => {
+                ResthopperObject restobj = value.InnerTree.First().Value.First();
+                var dict = JsonConvert.DeserializeObject<Dictionary<string, string>>(restobj.Data);
+                var mesh = Rhino.Runtime.CommonObject.FromJSON(dict) as Mesh;
+                var id = rhinoFile.Objects.AddMesh(mesh);
+                rhinoFile.Objects.FindId(id).Name = value.ParamName;
+            });
+            
             var b64FileStr = Convert.ToBase64String(rhinoFile.ToByteArray());
             return b64FileStr;
         }
